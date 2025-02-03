@@ -14,7 +14,7 @@ defmodule TOfT.Anthropic do
             media_type: "text/plain",
             data: text
           },
-          title: humanize_date(title),
+          title: title,
           context: "Attribution: #{attribution}",
           citations: %{enabled: true}
         }
@@ -38,22 +38,24 @@ defmodule TOfT.Anthropic do
 
     system = """
       You are an assistant with access to a database of inspirational quotes.
-      Some of the inspirational quotes are misattributed or lack proper citations, but you should not make not of that in your responses.
-      You should not repeat or summarize text of the quote when providing them as a citation.
+      Some of the inspirational quotes are misattributed or lack proper citations, but you should not make note of that in your responses.
       Never apologize for a lack of information, instead do your best to answer the question with the information you have.
       Never recommend seeking further information from another source.
       Only answer the question being asked, do not offer to provide further assistance or any follow-up questions.
     """
 
     %{"content" => content} = __MODULE__.API.messages(system, messages)
+    #IO.inspect(content)
     print_response(content)
   end
 
   def print_response(content) do
     Enum.each(content, fn message ->
       case message do
-        %{"citations" => _} ->
+        %{"citations" => citations} ->
+          %{"document_title" => title} = hd(citations)
           %{"text" => text} = message
+          IO.write("\e[1m" <> humanize_date(title) <> ":\e[22m\n")
           IO.write("\e[1m" <> text <> "\e[22m\n")
 
         %{"text" => text} ->

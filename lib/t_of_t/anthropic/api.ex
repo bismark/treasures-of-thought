@@ -21,13 +21,20 @@ defmodule TOfT.Anthropic.API do
     "#{@base_url}/#{@api_version}/#{endpoint}"
   end
 
-  def messages(system, messages) do
+  def messages(system, messages, opts \\ []) do
     body = %{
       max_tokens: 1024,
       model: @model,
       messages: messages,
       system: system
     }
+
+    body =
+      if tools = Keyword.get(opts, :tools) do
+        Map.put(body, :tools, tools)
+      else
+        body
+      end
 
     headers = get_headers()
 

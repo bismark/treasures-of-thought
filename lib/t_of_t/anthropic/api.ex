@@ -3,12 +3,16 @@ defmodule TOfT.Anthropic.API do
   A simple API wrapper for the Anthropic API using the Req library.
   """
 
+  # Base URL and API version
   @base_url "https://api.anthropic.com"
   @api_version "v1"
+
+  # Model definition
   @model "claude-3-5-haiku-20241022"
 
+  # Function to get headers for the API request
   defp get_headers() do
-    api_key = Application.fetch_env!(:t_of_t, TOfT.Anthropic) |> Keyword.fetch!(:api_key)
+    api_key = System.get_env(:ANTHROPIC_API_KEY)
 
     [
       {"x-api-key", api_key},
@@ -17,10 +21,12 @@ defmodule TOfT.Anthropic.API do
     ]
   end
 
+  # Function to build the API URL
   defp build_url(endpoint) do
     "#{@base_url}/#{@api_version}/#{endpoint}"
   end
 
+  # Function to send a POST request with the given data
   def messages(system, messages, opts \\ []) do
     body = %{
       max_tokens: 1024,

@@ -36,27 +36,24 @@ defmodule TOfT.Anthropic do
           required: [:month, :day]
         }
       },
-      # %{
-      #   name: :get_authors,
-      #   description: "Get the list of authors in the database.",
-      #   input_schema: %{
-      #     type: :object,
-      #     properties: %{}
-      #   }
-      # },
-      # %{
-      #   name: :get_quotes_by_author,
-      #   description: "Get a list of quotes by a specific author.",
-      #   input_schema: %{
-      #     type: :object,
-      #     properties: %{
-      #       name: %{
-      #         type: :string,
-      #         description: "The name of the author."
-      #       }
-      #     },
-      #   }
-      # }
+      %{
+        name: :get_authors,
+        description: "Get the list of authors in the database. Some authors may be listed under multiple names, e.g. \"Emerson\" and \"Ralph Waldo Emerson\". These should be treated as a single author.",
+        input_schema: %{
+          type: :object,
+          properties: %{}
+        }
+      },
+      %{
+        name: :get_quotes_by_author,
+        description: "Get a list of quotes by a specific author.",
+        input_schema: %{
+          type: :object,
+          properties: %{
+            # make this take a list of names AI!
+          },
+        }
+      }
     ]
 
   valid_tools = Enum.map(@tools, &Map.fetch!(&1, :name))
@@ -101,9 +98,9 @@ defmodule TOfT.Anthropic do
             "get_authors" ->
               get_authors(id)
 
-            # "get_quotes_by_author" ->
-            #   %{"name" => name} = input
-            #   get_quotes_by_author(name)
+            "get_quotes_by_author" ->
+              %{"name" => name} = input
+              get_quotes_by_author(name, id)
           end
         end)
 
@@ -114,6 +111,22 @@ defmodule TOfT.Anthropic do
       List.last(content)
       |> print_response()
     end
+  end
+
+  def get_quotes_by_author(name, id) do
+    quotes =
+      TOfT.data()
+      |> Enum.flat_map(fn {_date, quotes} ->
+        quotes
+        |> Enum.filter(fn %{"attribution" => attribution} -> String.downcase(attribution) == String.downcase(name) end)
+        |> Enum.map(fn %{"text" => text} -> text end)
+      end)
+
+    %{
+      type: :tool_result,
+      tool_use_id: id,
+      content: Enum.join(quotes, "\n")
+    }
   end
 
   def get_authors(id) do
@@ -130,21 +143,8 @@ defmodule TOfT.Anthropic do
     %{
       type: :tool_result,
       tool_use_id: id,
-      content: [
-        %{
-          type: :document,
-          source: %{
-            type: :text,
-            media_type: "text/plain",
-            data: Enum.join(authors, "\n")
-          },
-          title: "Authors",
-          context: "List of all authors",
-          citations: %{enabled: true}
-        }
-      ]
+      content: Enum.join(authors, "\n")
     }
-
   end
 
   defp get_todays_quote(id) do
@@ -166,15 +166,8 @@ defmodule TOfT.Anthropic do
       tool_use_id: id,
       content: [
         %{
-          type: :document,
-          source: %{
-            type: :text,
-            media_type: "text/plain",
-            data: text
-          },
-          title: date,
-          context: "Attribution: #{attribution}",
-          citations: %{enabled: true}
+          type: :text,
+          content: text <> "\nAttribution: " <> attribution
         }
       ]
     }

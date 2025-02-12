@@ -116,6 +116,11 @@ defmodule TOfT.Anthropic do
     end
   end
 
+  def get_authors() do
+    # implement this AI!
+
+  end
+
   defp get_todays_quote(id) do
     today = Date.utc_today()
     get_quotes_by_date(today.month, today.day, id)

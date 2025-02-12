@@ -50,7 +50,14 @@ defmodule TOfT.Anthropic do
         input_schema: %{
           type: :object,
           properties: %{
-            # make this take a list of names AI!
+            names: %{
+              type: :array,
+              items: %{
+                type: :string,
+                description: "Author name"
+              },
+              description: "List of author names to search for (will match any)"
+            }
           },
         }
       }
@@ -113,19 +120,37 @@ defmodule TOfT.Anthropic do
     end
   end
 
-  def get_quotes_by_author(name, id) do
+  def get_quotes_by_author(%{"names" => names}, id) do
+    downcased_names = Enum.map(names, &String.downcase/1)
+
     quotes =
       TOfT.data()
       |> Enum.flat_map(fn {_date, quotes} ->
         quotes
-        |> Enum.filter(fn %{"attribution" => attribution} -> String.downcase(attribution) == String.downcase(name) end)
-        |> Enum.map(fn %{"text" => text} -> text end)
+        |> Enum.filter(fn %{"attribution" => attribution} -> 
+          attribution && Enum.member?(downcased_names, String.downcase(attribution))
+        end)
+        |> Enum.map(fn quote -> 
+          "#{quote["text"]}\nAttribution: #{quote["attribution"]}"
+        end)
       end)
 
     %{
       type: :tool_result,
       tool_use_id: id,
-      content: Enum.join(quotes, "\n")
+      content: [
+        %{
+          type: :document,
+          source: %{
+            type: :text,
+            media_type: "text/plain",
+            data: Enum.join(quotes, "\n\n")
+          },
+          title: "Quotes by #{Enum.join(names, ", ")}",
+          context: "List of quotes by specified authors",
+          citations: %{enabled: true}
+        }
+      ]
     }
   end
 

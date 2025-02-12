@@ -12,7 +12,7 @@ defmodule TOfT.Anthropic.API do
 
   # Function to get headers for the API request
   defp get_headers() do
-    api_key = System.get_env(:ANTHROPIC_API_KEY)
+    api_key = Application.fetch_env!(:t_of_t, TOfT.Anthropic) |> Keyword.fetch!(:api_key)
 
     [
       {"x-api-key", api_key},

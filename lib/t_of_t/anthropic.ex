@@ -46,7 +46,7 @@ defmodule TOfT.Anthropic do
       },
       %{
         name: :get_quotes_by_author,
-        description: "Get a list of quotes by a specific author.",
+        description: "Get a list of quotes by a specific author. The author might be known by multiple names, e.g. \"Emerson\" and \"Ralph Waldo Emerson\". These can be accessed with the get_authors tool.",
         input_schema: %{
           type: :object,
           properties: %{
@@ -106,8 +106,8 @@ defmodule TOfT.Anthropic do
               get_authors(id)
 
             "get_quotes_by_author" ->
-              %{"name" => name} = input
-              get_quotes_by_author(name, id)
+              %{"names" => names} = input
+              get_quotes_by_author(names, id)
           end
         end)
 
@@ -120,7 +120,7 @@ defmodule TOfT.Anthropic do
     end
   end
 
-  def get_quotes_by_author(%{"names" => names}, id) do
+  def get_quotes_by_author(names, id) do
     downcased_names = Enum.map(names, &String.downcase/1)
 
     quotes =
@@ -135,15 +135,22 @@ defmodule TOfT.Anthropic do
         end)
       end)
 
+    content =
+      case quotes do
+        [quote] -> quote
+        quotes ->
+          Enum.map(quotes, fn quote ->
+            %{
+              type: :text,
+              text: quote
+            }
+          end)
+      end
+
     %{
       type: :tool_result,
       tool_use_id: id,
-      content: Enum.map(quotes, fn quote ->
-        %{
-          type: :text,
-          content: quote
-        }
-      end)
+      content: content
     }
   end
 
@@ -182,12 +189,7 @@ defmodule TOfT.Anthropic do
     %{
       type: :tool_result,
       tool_use_id: id,
-      content: [
-        %{
-          type: :text,
-          content: text <> "\nAttribution: " <> attribution
-        }
-      ]
+      content: text <> "\nAttribution: " <> attribution
     }
   end
 
@@ -229,11 +231,11 @@ defmodule TOfT.Anthropic do
     ]
 
     %{"content" => content} = __MODULE__.API.messages(@system_prompt, messages)
-    #IO.inspect(content)
     print_response(content)
   end
 
   def print_response(content) do
+    content = List.wrap(content)
     Enum.each(content, fn message ->
       case message do
         %{"citations" => citations} ->

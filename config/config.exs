@@ -1,4 +1,3 @@
 import Config
 
-# API settings
-api_key = System.get_env("ANTHROPIC_API_KEY")
+config :t_of_t, TOfT.Anthropic, api_key: System.get_env("ANTHROPIC_API_KEY")

@@ -127,7 +127,23 @@ defmodule TOfT.Anthropic do
       |> Enum.uniq()
       |> Enum.sort()
 
-    # make tool_result AI!
+    %{
+      type: :tool_result,
+      tool_use_id: id,
+      content: [
+        %{
+          type: :document,
+          source: %{
+            type: :text,
+            media_type: "text/plain",
+            data: Enum.join(authors, "\n")
+          },
+          title: "Authors",
+          context: "List of all authors",
+          citations: %{enabled: true}
+        }
+      ]
+    }
 
   end
 

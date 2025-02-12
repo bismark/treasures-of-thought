@@ -98,8 +98,8 @@ defmodule TOfT.Anthropic do
               %{"month" => month, "day" => day} = input
               get_quotes_by_date(month, day, id)
 
-            # "get_authors" ->
-            #   get_authors()
+            "get_authors" ->
+              get_authors(id)
 
             # "get_quotes_by_author" ->
             #   %{"name" => name} = input
@@ -116,15 +116,19 @@ defmodule TOfT.Anthropic do
     end
   end
 
-  def get_authors() do
-    TOfT.data()
-    |> Enum.flat_map(fn {_date, quotes} ->
-      Enum.map(quotes, fn %{"attribution" => attribution} -> 
-        attribution || "Unknown"
+  def get_authors(id) do
+    authors =
+      TOfT.data()
+      |> Enum.flat_map(fn {_date, quotes} ->
+        quotes
+        |> Enum.reject(fn %{attribution: nil} -> true; _ -> false end)
+        |> Enum.map(fn %{"attribution" => attribution} -> attribution end)
       end)
-    end)
-    |> Enum.uniq()
-    |> Enum.sort()
+      |> Enum.uniq()
+      |> Enum.sort()
+
+    # make tool_result AI!
+
   end
 
   defp get_todays_quote(id) do

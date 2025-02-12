@@ -138,19 +138,12 @@ defmodule TOfT.Anthropic do
     %{
       type: :tool_result,
       tool_use_id: id,
-      content: [
+      content: Enum.map(quotes, fn quote ->
         %{
-          type: :document,
-          source: %{
-            type: :text,
-            media_type: "text/plain",
-            data: Enum.join(quotes, "\n\n")
-          },
-          title: "Quotes by #{Enum.join(names, ", ")}",
-          context: "List of quotes by specified authors",
-          citations: %{enabled: true}
+          type: :text,
+          content: quote
         }
-      ]
+      end)
     }
   end
 

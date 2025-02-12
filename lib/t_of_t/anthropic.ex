@@ -117,8 +117,14 @@ defmodule TOfT.Anthropic do
   end
 
   def get_authors() do
-    # implement this AI!
-
+    TOfT.data()
+    |> Enum.flat_map(fn {_date, quotes} ->
+      Enum.map(quotes, fn %{"attribution" => attribution} -> 
+        attribution || "Unknown"
+      end)
+    end)
+    |> Enum.uniq()
+    |> Enum.sort()
   end
 
   defp get_todays_quote(id) do
